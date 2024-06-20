@@ -2,32 +2,24 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
+def get_html_content(url: str) -> str:
+    """Given a url, make a get request and return the response text."""
+    # Fetch the HTML content
+    response = requests.get(url)
+    return response.text
 
-# Fetch the HTML content
-url = "https://lydianlyric.com/lydian-floor-plans-2/?type=2BR"
-response = requests.get(url)
-html_content = response.text
+lydian_url = "https://lydianlyric.com/lydian-floor-plans-2/?type=2BR"
+lydian_html = get_html_content(lydian_url)
 
-# Parse HTML with BeautifulSoup
 soup = BeautifulSoup(html_content, 'html.parser')
-
-# Find the specific div with id 'X'
 div_apts = soup.find('div', id='floor-plans')
 
 if div_apts:
-    # Assuming the table is directly inside div_X, find the table
-    table = div_X.find('table')
+    # Assuming the table is directly inside specified div id, find the table
+    table = div_apts.find('table')
     
     if table:
         df = pd.read_html(str(table))[0]
-        # # Process table rows and cells to extract data
-        # for row in table.find_all('tr'):
-        #     # Process each cell in the row
-        #     cells = row.find_all('td')
-        #     if cells:  # Assuming it's a data row (not header/footer)
-        #         # Example: Print the content of each cell
-        #         for cell in cells:
-        #             print(cell.text.strip())  # or do something with cell content
     else:
         print(f"No table found inside div with id 'X' on {url}")
 else:
