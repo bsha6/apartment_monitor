@@ -1,6 +1,10 @@
 # Apartment Monitor
 If you've ever searched for an apartment, you've probably encountered a horribly designed apartment website. Instead of having to manually check many websites, this project enables you to automatically check apartment websites, store apartment data, and provide alerts for pricing and unit inventory changes. Essentially, this is a price/inventory tracker for apartment listings.
 
+## Architecture
+![Architecture Diagram](relative%media/apt_monitor_architecture_diagram.png?raw=true "Apartment  Monitor Architecture Diagram")
+
+
 ## Setup Instructions
 
 
