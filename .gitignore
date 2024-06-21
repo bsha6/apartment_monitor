@@ -2,11 +2,16 @@
 ###################
 *.env
 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.dll
+
+
 # Compiled source #
 ###################
 *.com
 *.class
-*.dll
 *.exe
 *.o
 *.so
@@ -39,3 +44,7 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# VS Code
+#########
+.vscode/
