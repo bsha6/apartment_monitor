@@ -1,5 +1,4 @@
 import time
-from typing import Generator
 from selenium import webdriver
 from bs4 import BeautifulSoup
 from webdriver_manager.chrome import ChromeDriverManager
@@ -7,13 +6,7 @@ import pandas as pd
 import numpy as np
 import re
 
-
-def intialize_driver() -> webdriver.Chrome:
-    # Use webdriver_manager package to handle installing Chrome Driver
-    driver_options = webdriver.chrome.options.Options()
-    driver_options.add_argument('--headless=new')
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=driver_options)
-    return driver
+from utils.string_utils import extract_digits_from_text
 
 
 def interact_and_scrape_website(url: str) -> BeautifulSoup:
@@ -21,7 +14,7 @@ def interact_and_scrape_website(url: str) -> BeautifulSoup:
     Depending on what website, take action to show all apt data, and return a BeautifulSoup object.
     """
     driver_options = webdriver.chrome.options.Options()
-    # driver_options.add_argument('--headless=new')
+    driver_options.add_argument('--headless=new')
     driver = webdriver.Chrome(ChromeDriverManager().install(), options=driver_options)
 
     try:
@@ -56,7 +49,7 @@ def interact_and_scrape_website(url: str) -> BeautifulSoup:
 
 
 def parse_html_to_df(url: str, soup: BeautifulSoup) -> pd.DataFrame:
-    """"""
+    """Given BeautifulSoup object, parse by url and return a cleaned df of apartment information."""
     if "450k" in url:
         div_class_450k = "fp_lists"
         soup_floor_plans = soup.find('div', class_=div_class_450k)
@@ -89,12 +82,6 @@ def parse_html_to_df(url: str, soup: BeautifulSoup) -> pd.DataFrame:
         return df_450k
     else:
         raise ValueError(f"URL '{url}' is not recognized.")
-
-
-def extract_digits_from_text(text: str) -> int:
-    """Given a string, extract all digits using regex. Assumes digits are all grouped together in string."""
-    digits = re.findall(r'\d+', text)
-    return digits[0]
 
 
 def scrape_parse_and_get_df(url: str) -> pd.DataFrame:
