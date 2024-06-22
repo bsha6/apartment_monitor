@@ -6,9 +6,8 @@ If you've ever searched for an apartment, you've probably encountered a horribly
 
 
 ## Setup Instructions
-Run using cron?
-
-Installing the latest chromedriver version using the webdriver_manager package.
+1) After cloning the repo, run `conda env create -f environment.yml`
+2) Create a .env file with a `UTILS_FOLDER_PATH` containing the absolute path to the "utils" folder in the cloned repo.
 
 ## Customizing
 Each website will be different. If you're able to get to a page that has a table, you can use the parse_table_from_html() function to get a Pandas DataFrame with all of the information in the table. Other websites may require more interactivity (such as a load more button). I've used Selenium to handle this.
