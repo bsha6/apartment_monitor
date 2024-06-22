@@ -1,12 +1,12 @@
 # Environment #
-###################
+###############
 *.env
 
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files #
+#########################################
 __pycache__/
 *.py[cod]
 *.dll
-
 
 # Compiled source #
 ###################
@@ -48,3 +48,7 @@ Thumbs.db
 # VS Code
 #########
 .vscode/
+
+# Misc #
+########
+thoughts.md
