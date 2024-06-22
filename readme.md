@@ -2,12 +2,10 @@
 If you've ever searched for an apartment, you've probably encountered a horribly designed apartment website. Instead of having to manually check many websites, this project enables you to automatically check apartment websites, store apartment data, and provide alerts for pricing and unit inventory changes. Essentially, this is a price/inventory tracker for apartment listings.
 
 ## Architecture
-![Architecture Diagram](relative%media/apt_monitor_architecture_diagram.png?raw=true "Apartment  Monitor Architecture Diagram")
+![Architecture Diagram](https://raw.githubusercontent.com/bsha6/apartment_monitor/main/media/apt_monitor_architecture_diagram.png "Apartment  Monitor Architecture Diagram")
 
 
 ## Setup Instructions
-
-
 Run using cron?
 
 Installing the latest chromedriver version using the webdriver_manager package.
