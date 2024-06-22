@@ -45,8 +45,8 @@ __pycache__/
 ehthumbs.db
 Thumbs.db
 
-# VS Code
-#########
+# VS Code #
+###########
 .vscode/
 
 # Misc #
