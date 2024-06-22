@@ -45,6 +45,10 @@ def parse_table_from_html(soup: BeautifulSoup, div_id: str) -> pd.DataFrame:
 
 
 def clean_df_by_url(df: pd.DataFrame, url: str) -> pd.DataFrame:
+    """
+    Cleans the Pandas df based on the provided url. 
+    Handles bespoke data cleaning and processing.
+    """
     if 'lydianlyric' in url:
         df["bedrooms"], df["bathrooms"] = zip(*df["BED/BATH"].str.split(" / ", n=1))
         df = df.drop(columns=["DETAILS", "APPLY NOW", "BED/BATH"])
@@ -56,6 +60,10 @@ def clean_df_by_url(df: pd.DataFrame, url: str) -> pd.DataFrame:
 
 
 def scrape_parse_and_read_html(url: str, div_id: str) -> pd.DataFrame:
+    """
+    Scrapes, parses, and reads HTML content from a given URL and extracts data into a Pandas df.
+    Through the url, set a schema and a dictionary of columns to be renamed. This needs to be done for each new url.
+    """
     if "lydianlyric" in url:
         schema = {
             "UNIT NUMBER": str,
@@ -169,5 +177,4 @@ if __name__ == "__main__":
 
     lyric_url = "https://lydianlyric.com/lyric-floor-plans/?type=2BR"
     lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
-
     print(lyric_df)
