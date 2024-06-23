@@ -26,9 +26,9 @@ class DBConfigManager:
     def __init__(self, db_connection):
         self.conn = db_connection
 
-    def get_all_configs(self):
+    def get_all_from_table(self, table):
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM apts")
+            cur.execute(f"SELECT * FROM {table}")
             return cur.fetchall()
 
     def get_config_by_url(self, url):
@@ -56,12 +56,33 @@ class DBConfigManager:
 if __name__ == "__main__":
     conn = psycopg2.connect(**db_params)
     config_manager = DBConfigManager(conn)
-    all_configs = config_manager.get_all_configs()
-    all_configs_df = pd.DataFrame(all_configs)
-    print(all_configs_df)
+    apts = config_manager.get_all_from_table("apts")
+    apts_df = pd.DataFrame(apts)
 
-    for row in all_configs:
-        if row['div_id']:
-            print(scrape_parse_and_read_html(url=row['url'], div_id=row['div_id']))
-        else:
-            print(interact_scrape_and_get_df(url=row['url']))
+    # Test comparing new data with historical.
+    lyric_apt_df = apts_df[apts_df['building_name'] == 'Lyric']
+
+    lyric_apt_id = lyric_apt_df['id'].iloc[0]
+    lyric_url = lyric_apt_df['url'].iloc[0]
+    lyric_div_id = lyric_apt_df['div_id'].iloc[0]
+
+    latest_lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lyric_div_id)
+    print(latest_lyric_df)
+
+    # Lookup old data from floor plans table
+    conn = psycopg2.connect(**db_params)
+    config_manager = DBConfigManager(conn)
+    floor_plans = config_manager.get_all_from_table("floor_plans")
+    # TODO: do filtering in SQL
+    floor_plans_df = pd.DataFrame(floor_plans)
+    lyric_fps = floor_plans_df[floor_plans_df["apt_id"] == lyric_apt_id]
+    print(lyric_fps)
+
+
+
+
+    # for row in all_configs:
+    #     if row['div_id']:
+    #         print(scrape_parse_and_read_html(url=row['url'], div_id=row['div_id']))
+    #     else:
+    #         print(interact_scrape_and_get_df(url=row['url']))
