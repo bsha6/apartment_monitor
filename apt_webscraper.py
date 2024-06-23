@@ -14,7 +14,7 @@ load_dotenv()
 UTILS_PATH = os.getenv('UTILS_FOLDER_PATH')
 sys.path.insert(0, UTILS_PATH)
 
-from utils.string_utils import extract_digits_from_text
+from utils.string_utils import extract_digits_from_text, contains_digits
 from utils.pd_df_ops import cast_df_and_rename_cols
 
 
@@ -136,7 +136,10 @@ def parse_html_to_df(url: str, soup: BeautifulSoup) -> pd.DataFrame:
             unit_number_extracted = extract_digits_from_text(unit_number)
             description = fp_block.find_all('p')
             bed_and_bath = description[1].text.strip().split("+")
-            bedrooms, bathrooms = [extract_digits_from_text(b) for b in bed_and_bath]
+            bedrooms, bathrooms = [
+                extract_digits_from_text(b) if contains_digits(b) else 0
+                for b in bed_and_bath
+                ]
             floor_plan_type = description[2].text.strip()
             sq_ft = description[3].text.strip().split(" ")[0]
             price_string = description[4].text.strip().replace(',', '')
@@ -159,7 +162,7 @@ def parse_html_to_df(url: str, soup: BeautifulSoup) -> pd.DataFrame:
         raise ValueError(f"URL '{url}' is not recognized.")
 
 
-def scrape_parse_and_get_df(url: str) -> pd.DataFrame:
+def interact_scrape_and_get_df(url: str) -> pd.DataFrame:
     # TODO: will modify this to write to SQLite DB
     soup = interact_and_scrape_website(url)
     df = parse_html_to_df(url, soup)
@@ -167,14 +170,14 @@ def scrape_parse_and_get_df(url: str) -> pd.DataFrame:
 
 if __name__ == "__main__":
     url_450k = "https://www.450k.com/floor-plans/apartments?two-bed"
-    df_450k = scrape_parse_and_get_df(url_450k)
+    df_450k = interact_scrape_and_get_df(url_450k)
     print(df_450k)
 
-    lydian_url = "https://lydianlyric.com/lydian-floor-plans-2/?type=2BR"
-    lydian_div_id = "floor-plans"
-    lydian_df = scrape_parse_and_read_html(url=lydian_url, div_id=lydian_div_id)
-    print(lydian_df)
+    # lydian_url = "https://lydianlyric.com/lydian-floor-plans-2/?type=2BR"
+    # lydian_div_id = "floor-plans"
+    # lydian_df = scrape_parse_and_read_html(url=lydian_url, div_id=lydian_div_id)
+    # print(lydian_df)
 
-    lyric_url = "https://lydianlyric.com/lyric-floor-plans/?type=2BR"
-    lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
-    print(lyric_df)
+    # lyric_url = "https://lydianlyric.com/lyric-floor-plans/?type=2BR"
+    # lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
+    # print(lyric_df)
