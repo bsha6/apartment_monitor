@@ -7,6 +7,10 @@ def extract_digits_from_text(text: str) -> int:
     return digits
 
 
+def contains_digits(text: str) -> bool:
+    return any(char.isdigit() for char in text)
+
+
 def snakecase_text(text: str) -> str:
     """Snakecase by lowercasing all text, replacing spaces with '_', and replacing unneeded characters."""
     lowercased_text = text.lower()
