@@ -173,11 +173,11 @@ if __name__ == "__main__":
     df_450k = interact_scrape_and_get_df(url_450k)
     print(df_450k)
 
-    # lydian_url = "https://lydianlyric.com/lydian-floor-plans-2/?type=2BR"
-    # lydian_div_id = "floor-plans"
-    # lydian_df = scrape_parse_and_read_html(url=lydian_url, div_id=lydian_div_id)
-    # print(lydian_df)
+    lydian_url = "https://lydianlyric.com/lydian-floor-plans-2/?type=2BR"
+    lydian_div_id = "floor-plans"
+    lydian_df = scrape_parse_and_read_html(url=lydian_url, div_id=lydian_div_id)
+    print(lydian_df)
 
-    # lyric_url = "https://lydianlyric.com/lyric-floor-plans/?type=2BR"
-    # lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
-    # print(lyric_df)
+    lyric_url = "https://lydianlyric.com/lyric-floor-plans/?type=2BR"
+    lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
+    print(lyric_df)
