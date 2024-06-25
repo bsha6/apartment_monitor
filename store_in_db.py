@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import pandas as pd
+from typing import List
 
 from apt_webscraper import scrape_parse_and_read_html, interact_scrape_and_get_df
 
@@ -46,10 +47,26 @@ class DBConfigManager:
         except psycopg2.Error as e:
             print("Error: ", e)
 
-    def select_all_rows_from_table(self, table):
+    def select_all_rows_from_table(self, table: str):
+        """Given a table, select and return all rows of data."""
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(f"SELECT * FROM {table}")
             return cur.fetchall()
+
+    def get_apt_id_df_given_url(self, url_list: List[str]):
+        """Given a list of urls, return a df of apt ids."""
+        url_list_distinct = tuple(url_list)
+        # url_list_distinct = tuple(set(url_list))
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(f"SELECT id, url FROM apts WHERE url IN {url_list_distinct}")
+            return pd.DataFrame(cur.fetchall())
+
+    
+    # TODO: add update_floor_plans_table()
+    # TODO: will need to add columns apt_id and availability status (or make this True by default?, then change this to false when fp_id isn't in new batch of data?)
+    def upsert_floor_plan(self):
+        pass
+
 
     # TODO: modify this to work with a building_name arg
     def get_config_by_url(self, url):
@@ -88,11 +105,13 @@ if __name__ == "__main__":
         #         print(interact_scrape_and_get_df(url=row['url']))
 
         # TODO: store scraped data in db !
-        fp_cols = config_manager.get_all_cols_in_table("floor_plans")
-        print(fp_cols)
+        # fp_cols = config_manager.get_all_cols_in_table("floor_plans")
+        # print(fp_cols)
 
-        # TODO: add update_floor_plans_table()
-        # TODO: will need to add columns apt_id and availability status (or make this True by default?, then change this to false when fp_id isn't in new batch of data?)
+        # Testing upserting
+        apt_urls = apts_df['url'].to_list()
+        apt_ids = config_manager.get_apt_id_df_given_url(apt_urls)
+        print(apt_ids)
 
         # WIP: Test comparing new data with historical.
         # lyric_apt_df = apts_df[apts_df['building_name'] == 'Lyric']
