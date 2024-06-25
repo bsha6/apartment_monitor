@@ -2,7 +2,8 @@ import os
 import sys
 from dotenv import load_dotenv
 import psycopg2
-from psycopg2.extras import RealDictCursor
+from psycopg2 import sql
+from psycopg2.extras import execute_values, RealDictCursor
 import pandas as pd
 from typing import List
 
@@ -69,11 +70,46 @@ class DBConfigManager:
             df_apt_scraping_info = pd.DataFrame(cur.fetchall())
             return df_apt_scraping_info
 
-    # TODO: add update_floor_plans_table()
-    # TODO: will need to add columns apt_id and availability status (or make this True by default?, then change this to false when fp_id isn't in new batch of data?)
-    def upsert_floor_plan(self):
-        pass
+    def batch_upsert_floor_plans(self, df: pd.DataFrame):
+        """Upsert (update and insert) floor plans table using a given df."""
+        cursor = self.conn.cursor()
+        columns = df.columns.to_list()
 
+        # Ensure all required columns are in the DataFrame
+        # TODO: some of these are going to have floor_plan_type and some will not
+        columns_check = ['apt_id', 'unit_number', 'sq_ft', 'bedrooms', 'bathrooms', 'price', 'date_available']
+        missing_columns = set(columns_check) - set(df.columns)
+        if missing_columns:
+            raise ValueError(f"Missing columns in DataFrame: {missing_columns}")
+
+        # Prepare the data
+        data_to_upsert = [
+            tuple(row[col_name] for col_name in columns)
+            for _, row in df.iterrows()
+        ]
+        
+        # Construct the SQL query
+        insert_clause = sql.SQL("INSERT INTO floor_plans ({}) VALUES %s").format(
+            sql.SQL(', ').join(map(sql.Identifier, columns))
+        )
+        
+        update_clause = sql.SQL("ON CONFLICT (apt_id, unit_number) DO UPDATE SET {}").format(
+            sql.SQL(', ').join(
+                sql.SQL("{} = EXCLUDED.{}").format(sql.Identifier(col), sql.Identifier(col))
+                for col in columns if col not in ['apt_id', 'unit_number']
+            )
+        )
+        
+        upsert_query = sql.SQL("{} {}").format(
+            insert_clause,
+            update_clause
+        )
+            
+        execute_values(cursor, upsert_query, data_to_upsert)
+
+        self.conn.commit()
+        cursor.close()
+        print(f"Upserted {len(data_to_upsert)} rows into floor_plans table.")
 
     # TODO: modify this to work with a building_name arg
     def get_config_by_url(self, url):
@@ -121,18 +157,21 @@ if __name__ == "__main__":
 
         # Start with building name -> scrape -> upsert
         lyric_scraping_info = config_manager.get_apt_scraping_info_given_building('Lydian')
+
+        lyric_apt_id = lyric_scraping_info['id'].iloc[0]
         lyric_url = lyric_scraping_info['url'].iloc[0]
         lyric_div_id = lyric_scraping_info['div_id'].iloc[0]
 
         # WIP: Test comparing new data with historical.
         # lyric_apt_df = apts_df[apts_df['building_name'] == 'Lyric']
-
         # lyric_apt_id = lyric_apt_df['id'].iloc[0]
         # lyric_url = lyric_apt_df['url'].iloc[0]
         # lyric_div_id = lyric_apt_df['div_id'].iloc[0]
 
         latest_lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lyric_div_id)
-        print(latest_lyric_df)
+        latest_lyric_df['apt_id'] = lyric_apt_id
+        lyric_dropped = latest_lyric_df.drop(columns='building')
+        config_manager.batch_upsert_floor_plans(lyric_dropped)
 
         # # Lookup old data from floor plans table
         # conn = psycopg2.connect(**db_params)
