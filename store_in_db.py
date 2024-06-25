@@ -54,14 +54,21 @@ class DBConfigManager:
             return cur.fetchall()
 
     def get_apt_info_df_given_url(self, url_list: List[str], cols: str = 'id, div_id') -> pd.DataFrame:
-        """Given a list of urls and string of comma separated column names, return a df of apt specified columns and the url."""
+        """Given a list of urls and string of comma separated SQL column names, return a df of apt specified columns and the url."""
         url_list_distinct = tuple(set(url_list))
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(f"SELECT {cols}, url FROM apts WHERE url IN {url_list_distinct}")
             df_apt_info = pd.DataFrame(cur.fetchall())
             return df_apt_info
 
-    
+    def get_apt_scraping_info_given_building(self, building_name: str, cols: str = 'id, div_id') -> pd.DataFrame:
+        """Given a building name and string of comma separated SQL column names, return a df of apt data needed for scraping."""
+        # TODO: ensure building_name is Capitalized.
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(f"SELECT {cols}, url FROM apts WHERE building_name='{building_name}'")
+            df_apt_scraping_info = pd.DataFrame(cur.fetchall())
+            return df_apt_scraping_info
+
     # TODO: add update_floor_plans_table()
     # TODO: will need to add columns apt_id and availability status (or make this True by default?, then change this to false when fp_id isn't in new batch of data?)
     def upsert_floor_plan(self):
@@ -95,8 +102,8 @@ if __name__ == "__main__":
     try:
         conn = psycopg2.connect(**db_params)
         config_manager = DBConfigManager(conn)
-        apts = config_manager.select_all_rows_from_table("apts")
-        apts_df = pd.DataFrame(apts)
+        # apts = config_manager.select_all_rows_from_table("apts")
+        # apts_df = pd.DataFrame(apts)
 
         # for row in all_configs:
         #     if row['div_id']:
@@ -109,10 +116,13 @@ if __name__ == "__main__":
         # print(fp_cols)
 
         # Testing upserting
-        apt_urls = apts_df['url'].to_list()
-        apt_info = config_manager.get_apt_info_df_given_url(apt_urls)
-        print(apt_info)
+        # apt_urls = apts_df['url'].to_list()
+        # apt_info = config_manager.get_apt_info_df_given_url(apt_urls)
 
+        # Start with building name -> scrape -> upsert
+        lyric_scraping_info = config_manager.get_apt_scraping_info_given_building('Lydian')
+        lyric_url = lyric_scraping_info['url'].iloc[0]
+        lyric_div_id = lyric_scraping_info['div_id'].iloc[0]
 
         # WIP: Test comparing new data with historical.
         # lyric_apt_df = apts_df[apts_df['building_name'] == 'Lyric']
@@ -121,8 +131,8 @@ if __name__ == "__main__":
         # lyric_url = lyric_apt_df['url'].iloc[0]
         # lyric_div_id = lyric_apt_df['div_id'].iloc[0]
 
-        # latest_lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lyric_div_id)
-        # print(latest_lyric_df)
+        latest_lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lyric_div_id)
+        print(latest_lyric_df)
 
         # # Lookup old data from floor plans table
         # conn = psycopg2.connect(**db_params)
