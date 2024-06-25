@@ -53,13 +53,13 @@ class DBConfigManager:
             cur.execute(f"SELECT * FROM {table}")
             return cur.fetchall()
 
-    def get_apt_id_df_given_url(self, url_list: List[str]):
-        """Given a list of urls, return a df of apt ids."""
-        url_list_distinct = tuple(url_list)
-        # url_list_distinct = tuple(set(url_list))
+    def get_apt_info_df_given_url(self, url_list: List[str], cols: str = 'id, div_id') -> pd.DataFrame:
+        """Given a list of urls and string of comma separated column names, return a df of apt specified columns and the url."""
+        url_list_distinct = tuple(set(url_list))
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(f"SELECT id, url FROM apts WHERE url IN {url_list_distinct}")
-            return pd.DataFrame(cur.fetchall())
+            cur.execute(f"SELECT {cols}, url FROM apts WHERE url IN {url_list_distinct}")
+            df_apt_info = pd.DataFrame(cur.fetchall())
+            return df_apt_info
 
     
     # TODO: add update_floor_plans_table()
@@ -110,8 +110,9 @@ if __name__ == "__main__":
 
         # Testing upserting
         apt_urls = apts_df['url'].to_list()
-        apt_ids = config_manager.get_apt_id_df_given_url(apt_urls)
-        print(apt_ids)
+        apt_info = config_manager.get_apt_info_df_given_url(apt_urls)
+        print(apt_info)
+
 
         # WIP: Test comparing new data with historical.
         # lyric_apt_df = apts_df[apts_df['building_name'] == 'Lyric']
