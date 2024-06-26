@@ -65,6 +65,7 @@ def scrape_parse_and_read_html(url: str, div_id: str) -> pd.DataFrame:
     Through the url, set a schema and a dictionary of columns to be renamed. This needs to be done for each new url.
     """
     if "lydianlyric" in url:
+        # TODO: rework this to rename columns and then set schema at end? Important to make sure unit number stays as a string.
         schema = {
             "UNIT NUMBER": str,
             "RENT *": int,
@@ -169,16 +170,33 @@ def interact_scrape_and_get_df(url: str) -> pd.DataFrame:
     df = parse_html_to_df(url, soup)
     return df
 
+def given_url_get_latest_scraped_data(url: str, div_id: str = None) -> pd.DataFrame:
+    """Dispatcher function that takes a url, determines how it needs to be scraped, calls the necessary functions, and returns a cleaned df."""
+    # TODO: make this function more robust for other cases/websites
+    # TODO: Add unit test/checks/raise errors
+    if div_id:
+        df = scrape_parse_and_read_html(url, div_id)
+        return df
+    elif '450k' in url:
+        df = interact_scrape_and_get_df(url)
+        return df
+    elif not div_id:
+        raise ValueError(f"Don't recognize url: {url}. Did you mean to specify a div_id?")
+    else:
+        raise ValueError(f"Don't recognize url: {url}.")
+
 if __name__ == "__main__":
     url_450k = "https://www.450k.com/floor-plans/apartments?two-bed"
-    df_450k = interact_scrape_and_get_df(url_450k)
-    print(df_450k)
+    # df_450k = interact_scrape_and_get_df(url_450k)
+    # print(df_450k)
 
     lydian_url = "https://lydianlyric.com/lydian-floor-plans-2/?type=2BR"
     lydian_div_id = "floor-plans"
-    lydian_df = scrape_parse_and_read_html(url=lydian_url, div_id=lydian_div_id)
-    print(lydian_df)
+    # lydian_df = scrape_parse_and_read_html(url=lydian_url, div_id=lydian_div_id)
+    # print(lydian_df)
 
     lyric_url = "https://lydianlyric.com/lyric-floor-plans/?type=2BR"
-    lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
-    print(lyric_df)
+    # lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
+    # print(lyric_df)
+
+    print(given_url_get_latest_scraped_data(lyric_url, div_id=lydian_div_id))
