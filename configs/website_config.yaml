@@ -1,0 +1,20 @@
+- url_pattern: 'lydianlyric'
+  col_rename_mapping:
+    'RENT *': price
+    'SQ FT **': sq_ft
+    'UNIT NUMBER': unit_id
+  cleaning_rules:
+    - split_bed_bath:
+        column: BED/BATH
+        new_columns: [bedrooms, bathrooms]
+        separator: ' / '
+    - extract_digits:
+        columns: 
+          - 'RENT *'
+          - bedrooms
+          - bathrooms
+          - 'SQ FT **'
+    - drop_columns:
+        - DETAILS
+        - 'APPLY NOW'
+        - BED/BATH
