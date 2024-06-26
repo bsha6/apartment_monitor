@@ -7,7 +7,7 @@ from psycopg2.extras import execute_values, RealDictCursor
 import pandas as pd
 from typing import List
 
-from apt_webscraper import scrape_parse_and_read_html, interact_scrape_and_get_df
+from apt_webscraper import given_url_get_latest_scraped_data
 
 # Set DB info
 load_dotenv()
@@ -88,6 +88,7 @@ class DBConfigManager:
             for _, row in df.iterrows()
         ]
         
+        # TODO: "update" is happening but with the same data
         # Construct the SQL query
         insert_clause = sql.SQL("INSERT INTO floor_plans ({}) VALUES %s").format(
             sql.SQL(', ').join(map(sql.Identifier, columns))
@@ -143,7 +144,7 @@ if __name__ == "__main__":
 
         # for row in all_configs:
         #     if row['div_id']:
-        #         print(scrape_parse_and_read_html(url=row['url'], div_id=row['div_id']))
+        #         print(given_url_get_latest_scraped_data(url=row['url'], div_id=row['div_id']))
         #     else:
         #         print(interact_scrape_and_get_df(url=row['url']))
 
@@ -152,9 +153,8 @@ if __name__ == "__main__":
         # print(fp_cols)
 
         # Start with building name -> scrape -> upsert [DONE]
-        lyric_scraping_info = config_manager.get_apt_scraping_info_given_building('Lydian')
-
-        # TODO: add function to read 'scraper_function' col and handle accordingly
+        # TODO: convert this into a function where you can just pass the building name
+        lyric_scraping_info = config_manager.get_apt_scraping_info_given_building('450k')
 
         lyric_apt_id = lyric_scraping_info['id'].iloc[0]
         lyric_url = lyric_scraping_info['url'].iloc[0]
@@ -166,10 +166,10 @@ if __name__ == "__main__":
         # lyric_url = lyric_apt_df['url'].iloc[0]
         # lyric_div_id = lyric_apt_df['div_id'].iloc[0]
 
-        latest_lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lyric_div_id)
+        latest_lyric_df = given_url_get_latest_scraped_data(url=lyric_url, div_id=lyric_div_id)
         latest_lyric_df['apt_id'] = lyric_apt_id
-        lyric_dropped = latest_lyric_df.drop(columns='building')
-        config_manager.batch_upsert_floor_plans(lyric_dropped)
+        # lyric_dropped = latest_lyric_df.drop(columns='building')
+        config_manager.batch_upsert_floor_plans(latest_lyric_df)
 
         # # Lookup old data from floor plans table
         # conn = psycopg2.connect(**db_params)
