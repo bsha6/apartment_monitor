@@ -76,7 +76,7 @@ class DBConfigManager:
         columns = df.columns.to_list()
 
         # Ensure all required columns are in the DataFrame
-        # TODO: some of these are going to have floor_plan_type and some will not
+        # TODO: Validate this can handle cases where df has floor_plan_type col (it should work lol)
         columns_check = ['apt_id', 'unit_number', 'sq_ft', 'bedrooms', 'bathrooms', 'price', 'date_available']
         missing_columns = set(columns_check) - set(df.columns)
         if missing_columns:
@@ -151,12 +151,10 @@ if __name__ == "__main__":
         # fp_cols = config_manager.get_all_cols_in_table("floor_plans")
         # print(fp_cols)
 
-        # Testing upserting
-        # apt_urls = apts_df['url'].to_list()
-        # apt_info = config_manager.get_apt_info_df_given_url(apt_urls)
-
-        # Start with building name -> scrape -> upsert
+        # Start with building name -> scrape -> upsert [DONE]
         lyric_scraping_info = config_manager.get_apt_scraping_info_given_building('Lydian')
+
+        # TODO: add function to read 'scraper_function' col and handle accordingly
 
         lyric_apt_id = lyric_scraping_info['id'].iloc[0]
         lyric_url = lyric_scraping_info['url'].iloc[0]
