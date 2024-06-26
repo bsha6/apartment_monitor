@@ -51,7 +51,7 @@ def clean_df_by_url(df: pd.DataFrame, url: str) -> pd.DataFrame:
     """
     if 'lydianlyric' in url:
         df["bedrooms"], df["bathrooms"] = zip(*df["BED/BATH"].str.split(" / ", n=1))
-        df = df.drop(columns=["DETAILS", "APPLY NOW", "BED/BATH"])
+        df = df.drop(columns=["DETAILS", "APPLY NOW", "BED/BATH", "Building"])
         cols_to_extract_digits = ["RENT *", "bedrooms", "bathrooms", "SQ FT **"]
         df[cols_to_extract_digits] = df[cols_to_extract_digits].map(extract_digits_from_text)
     else:
