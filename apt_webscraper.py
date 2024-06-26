@@ -144,11 +144,12 @@ def parse_html_to_df(url: str, soup: BeautifulSoup) -> pd.DataFrame:
             sq_ft = description[3].text.strip().split(" ")[0]
             price_string = description[4].text.strip().replace(',', '')
             price_extracted = extract_digits_from_text(price_string)
-            date_availabile = description[5].text.strip().replace('AVAILABLE ', '')
-            apartments.append((unit_number_extracted, bedrooms, bathrooms, sq_ft, floor_plan_type, price_extracted, date_availabile))
+            date_available = description[5].text.strip().replace('AVAILABLE ', '')
+            apartments.append((unit_number_extracted, bedrooms, bathrooms, sq_ft, floor_plan_type, price_extracted, date_available))
 
         # Convert to dataframe, set types
-        df_450k = pd.DataFrame(apartments, columns=['unit_number', 'bedrooms', 'bathrooms', 'sq_ft', 'floor_plan_type', 'price', 'date_availabile'])
+        # All of these columns should always have the same types. Can have global dict with types?
+        df_450k = pd.DataFrame(apartments, columns=['unit_number', 'bedrooms', 'bathrooms', 'sq_ft', 'floor_plan_type', 'price', 'date_available'])
         df_450k = df_450k.astype(
             {
                 "bedrooms": np.float16,
