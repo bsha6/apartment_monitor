@@ -1,5 +1,6 @@
 import numpy as np
 
+# TODO: incorporate this into scraping script
 APT_DF_SCHEMA = {
     'unit_id': str,
     'price': int,
