@@ -106,24 +106,6 @@ class DBConfigManager:
             tuple(row[col_name] for col_name in columns) for _, row in df.iterrows()
         ]
 
-        # TODO: "update" is happening but with the same data
-        # Construct the SQL query (old working version)
-        # insert_clause = sql.SQL("INSERT INTO floor_plans ({}) VALUES %s").format(
-        #     sql.SQL(', ').join(map(sql.Identifier, columns))
-        # )
-
-        # update_clause = sql.SQL("ON CONFLICT (apt_id, unit_number) DO UPDATE SET {}").format(
-        #     sql.SQL(', ').join(
-        #         sql.SQL("{} = EXCLUDED.{}").format(sql.Identifier(col), sql.Identifier(col))
-        #         for col in columns if col not in ['apt_id', 'unit_number']
-        #     )
-        # )
-
-        # upsert_query = sql.SQL("{} {}").format(
-        #     insert_clause,
-        #     update_clause
-        # )
-
         # Prepare the SQL for each column
         column_updates = [
             sql.SQL(
