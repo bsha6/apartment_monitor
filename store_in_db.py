@@ -89,21 +89,49 @@ class DBConfigManager:
         ]
         
         # TODO: "update" is happening but with the same data
+        # Construct the SQL query (old working version)
+        # insert_clause = sql.SQL("INSERT INTO floor_plans ({}) VALUES %s").format(
+        #     sql.SQL(', ').join(map(sql.Identifier, columns))
+        # )
+        
+        # update_clause = sql.SQL("ON CONFLICT (apt_id, unit_number) DO UPDATE SET {}").format(
+        #     sql.SQL(', ').join(
+        #         sql.SQL("{} = EXCLUDED.{}").format(sql.Identifier(col), sql.Identifier(col))
+        #         for col in columns if col not in ['apt_id', 'unit_number']
+        #     )
+        # )
+        
+        # upsert_query = sql.SQL("{} {}").format(
+        #     insert_clause,
+        #     update_clause
+        # )
+
+        # Prepare the SQL for each column
+        column_updates = [
+            sql.SQL("{0} = CASE WHEN EXCLUDED.{0} IS DISTINCT FROM floor_plans.{0} THEN EXCLUDED.{0} ELSE floor_plans.{0} END").format(sql.Identifier(col))
+            for col in columns if col not in ['apt_id', 'unit_number']
+        ]
+        
         # Construct the SQL query
         insert_clause = sql.SQL("INSERT INTO floor_plans ({}) VALUES %s").format(
             sql.SQL(', ').join(map(sql.Identifier, columns))
         )
         
         update_clause = sql.SQL("ON CONFLICT (apt_id, unit_number) DO UPDATE SET {}").format(
-            sql.SQL(', ').join(
-                sql.SQL("{} = EXCLUDED.{}").format(sql.Identifier(col), sql.Identifier(col))
+            sql.SQL(', ').join(column_updates)
+        )
+        
+        where_clause = sql.SQL("WHERE {}").format(
+            sql.SQL(' OR ').join(
+                sql.SQL("EXCLUDED.{0} IS DISTINCT FROM floor_plans.{0}").format(sql.Identifier(col))
                 for col in columns if col not in ['apt_id', 'unit_number']
             )
         )
         
-        upsert_query = sql.SQL("{} {}").format(
+        upsert_query = sql.SQL("{} {} {}").format(
             insert_clause,
-            update_clause
+            update_clause,
+            where_clause
         )
             
         execute_values(cursor, upsert_query, data_to_upsert)
@@ -154,7 +182,7 @@ if __name__ == "__main__":
 
         # Start with building name -> scrape -> upsert [DONE]
         # TODO: convert this into a function where you can just pass the building name
-        lyric_scraping_info = config_manager.get_apt_scraping_info_given_building('450k')
+        lyric_scraping_info = config_manager.get_apt_scraping_info_given_building('Lyric')
 
         lyric_apt_id = lyric_scraping_info['id'].iloc[0]
         lyric_url = lyric_scraping_info['url'].iloc[0]
@@ -168,7 +196,6 @@ if __name__ == "__main__":
 
         latest_lyric_df = given_url_get_latest_scraped_data(url=lyric_url, div_id=lyric_div_id)
         latest_lyric_df['apt_id'] = lyric_apt_id
-        # lyric_dropped = latest_lyric_df.drop(columns='building')
         config_manager.batch_upsert_floor_plans(latest_lyric_df)
 
         # # Lookup old data from floor plans table
