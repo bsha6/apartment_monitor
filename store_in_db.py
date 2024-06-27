@@ -209,7 +209,7 @@ if __name__ == "__main__":
         # Start with building name -> scrape -> upsert [DONE]
         # TODO: convert this into a function where you can just pass the building name
         lyric_scraping_info = config_manager.get_apt_scraping_info_given_building(
-            "Lydian"
+            "Lyric"
         )
 
         lyric_apt_id = lyric_scraping_info["id"].iloc[0]
