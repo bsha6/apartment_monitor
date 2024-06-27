@@ -140,6 +140,24 @@ class DBConfigManager:
 
         execute_values(cursor, upsert_query, data_to_upsert)
 
+        # Get all current unit numbers for this apartment
+        apt_id = int(df['apt_id'].iloc[0])  # Assumes all data in df is from the same apt_id
+        cursor.execute("SELECT unit_number FROM floor_plans WHERE apt_id = %s", (apt_id,))
+        current_units = set(row[0] for row in cursor.fetchall())
+    
+        # Identify units that are no longer available
+        scraped_units = set(df['unit_number'])
+        units_removed = current_units - scraped_units
+
+        # Mark units as unavailable if they're no longer in the scraped data
+        if units_removed:
+            update_query = sql.SQL("""
+                UPDATE floor_plans 
+                SET availability_status = FALSE 
+                WHERE apt_id = %s AND unit_number = ANY(%s)
+            """)
+            cursor.execute(update_query, (apt_id, list(units_removed)))
+
         rows_upserted = cursor.rowcount
         self.conn.commit()
         cursor.close()
