@@ -1,5 +1,4 @@
 import os
-import sys
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2 import sql
@@ -40,11 +39,11 @@ class DBConfigManager:
             # Get table columns from the database
             with self.conn.cursor() as cur:
                 cur.execute(
-                    f"""
+                    """
                     SELECT column_name 
                     FROM information_schema.columns 
                     WHERE table_name = %s
-                """,
+                    """,
                     (table,),
                 )
                 db_columns = [row[0] for row in cur.fetchall()]
@@ -210,7 +209,7 @@ if __name__ == "__main__":
         # Start with building name -> scrape -> upsert [DONE]
         # TODO: convert this into a function where you can just pass the building name
         lyric_scraping_info = config_manager.get_apt_scraping_info_given_building(
-            "Lyric"
+            "Lydian"
         )
 
         lyric_apt_id = lyric_scraping_info["id"].iloc[0]

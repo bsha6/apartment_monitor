@@ -14,8 +14,8 @@ load_dotenv()
 UTILS_PATH = os.getenv("UTILS_FOLDER_PATH")
 sys.path.insert(0, UTILS_PATH)
 
-from utils.string_utils import extract_digits_from_text, contains_digits
-from utils.pd_df_ops import cast_df_and_rename_cols
+from utils.string_utils import extract_digits_from_text, contains_digits  # noqa: E402
+from utils.pd_df_ops import cast_df_and_rename_cols  # noqa: E402
 
 
 def get_soup(url: str) -> BeautifulSoup:
@@ -101,7 +101,7 @@ def interact_and_scrape_website(url: str) -> BeautifulSoup:
         if "450k" in url:
             time.sleep(1)
             # Scroll to the bottom to force cookie pop up to minimize.
-            driver.execute_script(f"window.scrollBy(0, 1800);")
+            driver.execute_script("window.scrollBy(0, 1800);")
             # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(1)
             try:
