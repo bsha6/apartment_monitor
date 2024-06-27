@@ -11,18 +11,19 @@ from apt_webscraper import given_url_get_latest_scraped_data
 
 # Set DB info
 load_dotenv()
-HOST = os.getenv('HOST')
-DB_NAME = os.getenv('DB_NAME')
-USER = os.getenv('USER')
-PASSWORD = os.getenv('PASSWORD')
-PORT = os.getenv('PORT')
+HOST = os.getenv("HOST")
+DB_NAME = os.getenv("DB_NAME")
+USER = os.getenv("USER")
+PASSWORD = os.getenv("PASSWORD")
+PORT = os.getenv("PORT")
 db_params = {
     "host": HOST,
     "database": DB_NAME,
     "user": USER,
     # "password": PASSWORD,
-    "port": PORT
+    "port": PORT,
 }
+
 
 class DBConfigManager:
     def __init__(self, db_connection):
@@ -32,17 +33,20 @@ class DBConfigManager:
         if self.conn:
             self.conn.close()
             print("Database connection closed.")
-    
+
     def get_all_cols_in_table(self, table: str):
         """Given a table name, return a list of all the table's column names."""
         try:
             # Get table columns from the database
             with self.conn.cursor() as cur:
-                cur.execute(f"""
+                cur.execute(
+                    f"""
                     SELECT column_name 
                     FROM information_schema.columns 
                     WHERE table_name = %s
-                """, (table,))
+                """,
+                    (table,),
+                )
                 db_columns = [row[0] for row in cur.fetchall()]
                 return db_columns
         except psycopg2.Error as e:
@@ -54,19 +58,27 @@ class DBConfigManager:
             cur.execute(f"SELECT * FROM {table}")
             return cur.fetchall()
 
-    def get_apt_info_df_given_url(self, url_list: List[str], cols: str = 'id, div_id') -> pd.DataFrame:
+    def get_apt_info_df_given_url(
+        self, url_list: List[str], cols: str = "id, div_id"
+    ) -> pd.DataFrame:
         """Given a list of urls and string of comma separated SQL column names, return a df of apt specified columns and the url."""
         url_list_distinct = tuple(set(url_list))
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(f"SELECT {cols}, url FROM apts WHERE url IN {url_list_distinct}")
+            cur.execute(
+                f"SELECT {cols}, url FROM apts WHERE url IN {url_list_distinct}"
+            )
             df_apt_info = pd.DataFrame(cur.fetchall())
             return df_apt_info
 
-    def get_apt_scraping_info_given_building(self, building_name: str, cols: str = 'id, div_id') -> pd.DataFrame:
+    def get_apt_scraping_info_given_building(
+        self, building_name: str, cols: str = "id, div_id"
+    ) -> pd.DataFrame:
         """Given a building name and string of comma separated SQL column names, return a df of apt data needed for scraping."""
         # TODO: ensure building_name is Capitalized.
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(f"SELECT {cols}, url FROM apts WHERE building_name='{building_name}'")
+            cur.execute(
+                f"SELECT {cols}, url FROM apts WHERE building_name='{building_name}'"
+            )
             df_apt_scraping_info = pd.DataFrame(cur.fetchall())
             return df_apt_scraping_info
 
@@ -77,30 +89,37 @@ class DBConfigManager:
 
         # Ensure all required columns are in the DataFrame
         # TODO: Validate this can handle cases where df has floor_plan_type col (it should work lol)
-        columns_check = ['apt_id', 'unit_number', 'sq_ft', 'bedrooms', 'bathrooms', 'price', 'date_available']
+        columns_check = [
+            "apt_id",
+            "unit_number",
+            "sq_ft",
+            "bedrooms",
+            "bathrooms",
+            "price",
+            "date_available",
+        ]
         missing_columns = set(columns_check) - set(df.columns)
         if missing_columns:
             raise ValueError(f"Missing columns in DataFrame: {missing_columns}")
 
         # Prepare the data
         data_to_upsert = [
-            tuple(row[col_name] for col_name in columns)
-            for _, row in df.iterrows()
+            tuple(row[col_name] for col_name in columns) for _, row in df.iterrows()
         ]
-        
+
         # TODO: "update" is happening but with the same data
         # Construct the SQL query (old working version)
         # insert_clause = sql.SQL("INSERT INTO floor_plans ({}) VALUES %s").format(
         #     sql.SQL(', ').join(map(sql.Identifier, columns))
         # )
-        
+
         # update_clause = sql.SQL("ON CONFLICT (apt_id, unit_number) DO UPDATE SET {}").format(
         #     sql.SQL(', ').join(
         #         sql.SQL("{} = EXCLUDED.{}").format(sql.Identifier(col), sql.Identifier(col))
         #         for col in columns if col not in ['apt_id', 'unit_number']
         #     )
         # )
-        
+
         # upsert_query = sql.SQL("{} {}").format(
         #     insert_clause,
         #     update_clause
@@ -108,37 +127,45 @@ class DBConfigManager:
 
         # Prepare the SQL for each column
         column_updates = [
-            sql.SQL("{0} = CASE WHEN EXCLUDED.{0} IS DISTINCT FROM floor_plans.{0} THEN EXCLUDED.{0} ELSE floor_plans.{0} END").format(sql.Identifier(col))
-            for col in columns if col not in ['apt_id', 'unit_number']
+            sql.SQL(
+                "{0} = CASE WHEN EXCLUDED.{0} IS DISTINCT FROM floor_plans.{0} THEN EXCLUDED.{0} ELSE floor_plans.{0} END"
+            ).format(sql.Identifier(col))
+            for col in columns
+            if col not in ["apt_id", "unit_number"]
         ]
-        
+
         # Construct the SQL query
         insert_clause = sql.SQL("INSERT INTO floor_plans ({}) VALUES %s").format(
-            sql.SQL(', ').join(map(sql.Identifier, columns))
+            sql.SQL(", ").join(map(sql.Identifier, columns))
         )
-        
-        update_clause = sql.SQL("ON CONFLICT (apt_id, unit_number) DO UPDATE SET {}").format(
-            sql.SQL(', ').join(column_updates)
-        )
-        
+
+        update_clause = sql.SQL(
+            "ON CONFLICT (apt_id, unit_number) DO UPDATE SET {}"
+        ).format(sql.SQL(", ").join(column_updates))
+
         where_clause = sql.SQL("WHERE {}").format(
-            sql.SQL(' OR ').join(
-                sql.SQL("EXCLUDED.{0} IS DISTINCT FROM floor_plans.{0}").format(sql.Identifier(col))
-                for col in columns if col not in ['apt_id', 'unit_number']
+            sql.SQL(" OR ").join(
+                sql.SQL("EXCLUDED.{0} IS DISTINCT FROM floor_plans.{0}").format(
+                    sql.Identifier(col)
+                )
+                for col in columns
+                if col not in ["apt_id", "unit_number"]
             )
         )
-        
+
         upsert_query = sql.SQL("{} {} {}").format(
-            insert_clause,
-            update_clause,
-            where_clause
+            insert_clause, update_clause, where_clause
         )
-            
+
         execute_values(cursor, upsert_query, data_to_upsert)
 
+        rows_upserted = cursor.rowcount
         self.conn.commit()
         cursor.close()
-        print(f"Upserted {len(data_to_upsert)} rows into floor_plans table.")
+        print(
+            f"Processed {len(data_to_upsert)} rows of data for apt_id {df['apt_id'].unique()}."
+        )
+        print(f"Actually upserted {rows_upserted} rows in the floor_plans table.")
 
     # TODO: modify this to work with a building_name arg
     def get_config_by_url(self, url):
@@ -150,7 +177,7 @@ class DBConfigManager:
         with self.conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO scraping_config (url, building_name, scraper_function) VALUES (%s, %s, %s)",
-                (url, building_name, scraper_function)
+                (url, building_name, scraper_function),
             )
         self.conn.commit()
 
@@ -158,7 +185,7 @@ class DBConfigManager:
         with self.conn.cursor() as cur:
             cur.execute(
                 "UPDATE scraping_config SET url = %s, building_name = %s, scraper_function = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                (url, building_name, scraper_function, id)
+                (url, building_name, scraper_function, id),
             )
         self.conn.commit()
 
@@ -182,11 +209,13 @@ if __name__ == "__main__":
 
         # Start with building name -> scrape -> upsert [DONE]
         # TODO: convert this into a function where you can just pass the building name
-        lyric_scraping_info = config_manager.get_apt_scraping_info_given_building('Lyric')
+        lyric_scraping_info = config_manager.get_apt_scraping_info_given_building(
+            "Lyric"
+        )
 
-        lyric_apt_id = lyric_scraping_info['id'].iloc[0]
-        lyric_url = lyric_scraping_info['url'].iloc[0]
-        lyric_div_id = lyric_scraping_info['div_id'].iloc[0]
+        lyric_apt_id = lyric_scraping_info["id"].iloc[0]
+        lyric_url = lyric_scraping_info["url"].iloc[0]
+        lyric_div_id = lyric_scraping_info["div_id"].iloc[0]
 
         # WIP: Test comparing new data with historical.
         # lyric_apt_df = apts_df[apts_df['building_name'] == 'Lyric']
@@ -194,8 +223,10 @@ if __name__ == "__main__":
         # lyric_url = lyric_apt_df['url'].iloc[0]
         # lyric_div_id = lyric_apt_df['div_id'].iloc[0]
 
-        latest_lyric_df = given_url_get_latest_scraped_data(url=lyric_url, div_id=lyric_div_id)
-        latest_lyric_df['apt_id'] = lyric_apt_id
+        latest_lyric_df = given_url_get_latest_scraped_data(
+            url=lyric_url, div_id=lyric_div_id
+        )
+        latest_lyric_df["apt_id"] = lyric_apt_id
         config_manager.batch_upsert_floor_plans(latest_lyric_df)
 
         # # Lookup old data from floor plans table
@@ -212,10 +243,5 @@ if __name__ == "__main__":
 
     finally:
         # Close the connection when done
-        if 'config_manager' in locals():
+        if "config_manager" in locals():
             config_manager.close_connection()
-
-
-
-
-
