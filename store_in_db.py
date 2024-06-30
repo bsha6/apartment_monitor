@@ -8,6 +8,7 @@ from typing import List
 
 from apt_webscraper import given_url_get_latest_scraped_data
 
+
 # Set DB info
 load_dotenv()
 HOST = os.getenv("HOST")
@@ -195,6 +196,23 @@ class DBConfigManager:
             )
         self.conn.commit()
 
+def scrape_all_buildings_in_db():
+    """Scrape all of the building_names in the apts table and upsert the data into the floor_plans table."""
+    buildings = config_manager.select_cols_from_table(table="apts", cols_list="building_name")
+    buildings_list = [list(b.values())[0] for b in buildings]
+    for b in buildings_list:
+        scraping_info = config_manager.get_apt_scraping_info_given_building(b)
+        apt_id = scraping_info["id"].iloc[0]
+        apt_url = scraping_info["url"].iloc[0]
+        apt_div_id = scraping_info["div_id"].iloc[0]
+
+        latest_b_df = given_url_get_latest_scraped_data(
+            url=apt_url, div_id=apt_div_id
+        )
+        latest_b_df["apt_id"] = apt_id
+        config_manager.batch_upsert_floor_plans(latest_b_df)
+    print(f"Scraped and upserted {len(buildings_list)}, including: {", ".join(buildings_list)}")
+
 
 if __name__ == "__main__":
     try:
@@ -214,24 +232,6 @@ if __name__ == "__main__":
         # print(fp_cols)
 
         # Start with building name -> scrape -> upsert [DONE]
-        # TODO: convert this into a function where you can just pass the building name
-
-        def scrape_all_buildings_in_db():
-            """Scrape all of the building_names in the apts table and upsert the data into the floor_plans table."""
-            buildings = config_manager.select_cols_from_table(table="apts", cols_list="building_name")
-            buildings_list = [list(b.values())[0] for b in buildings]
-            for b in buildings_list:
-                scraping_info = config_manager.get_apt_scraping_info_given_building(b)
-                apt_id = scraping_info["id"].iloc[0]
-                apt_url = scraping_info["url"].iloc[0]
-                apt_div_id = scraping_info["div_id"].iloc[0]
-
-                latest_b_df = given_url_get_latest_scraped_data(
-                    url=apt_url, div_id=apt_div_id
-                )
-                latest_b_df["apt_id"] = apt_id
-                config_manager.batch_upsert_floor_plans(latest_b_df)
-            print(f"Scraped and upserted {len(buildings_list)}, including: {str(*buildings_list)}")
 
         scrape_all_buildings_in_db()
 
