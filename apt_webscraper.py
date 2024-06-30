@@ -10,6 +10,8 @@ import numpy as np
 from io import StringIO
 from dotenv import load_dotenv
 
+from configs.schema_config import WEBSITE_ERROR_MESSAGES
+
 load_dotenv()
 UTILS_PATH = os.getenv("UTILS_FOLDER_PATH")
 sys.path.insert(0, UTILS_PATH)
@@ -38,7 +40,10 @@ def parse_table_from_html(soup: BeautifulSoup, div_id: str) -> pd.DataFrame:
     if div_apts is None:
         raise ValueError(f"Div with id {div_id} not found")
     table = div_apts.find("table")
+    # TODO: improve website error handling/make this more robust
     if table is None:
+        if div_apts in WEBSITE_ERROR_MESSAGES:
+            print("Not finding a table with div_id {div_id}. This is what bs4 is finding with specified div_id:", div_apts)
         raise ValueError(f"No table found inside div with id {div_id}")
     df = pd.read_html(StringIO(str(table)))[0]
     return df
@@ -226,4 +231,4 @@ if __name__ == "__main__":
     # lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
     # print(lyric_df)
 
-    print(given_url_get_latest_scraped_data(lyric_url, div_id=lydian_div_id))
+    print(given_url_get_latest_scraped_data(lydian_url, div_id=lydian_div_id))
