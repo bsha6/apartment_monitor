@@ -51,6 +51,12 @@ class DBConfigManager:
         except psycopg2.Error as e:
             print("Error: ", e)
 
+    def select_cols_from_table(self, table: str, cols_list: str = "*"):
+        """Given a table, select a comma separated list of columns and return rows of data."""
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(f"SELECT {cols_list} FROM {table}")
+            return cur.fetchall()
+
     def select_all_rows_from_table(self, table: str):
         """Given a table, select and return all rows of data."""
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -158,6 +164,7 @@ class DBConfigManager:
             """)
             cursor.execute(update_query, (apt_id, list(units_removed)))
 
+        # TODO: Fix inconsistencies/inaccuracies with rowcount. Claude suggesting CTE.
         rows_upserted = cursor.rowcount
         self.conn.commit()
         cursor.close()
@@ -208,13 +215,25 @@ if __name__ == "__main__":
 
         # Start with building name -> scrape -> upsert [DONE]
         # TODO: convert this into a function where you can just pass the building name
-        lyric_scraping_info = config_manager.get_apt_scraping_info_given_building(
-            "Lyric"
-        )
 
-        lyric_apt_id = lyric_scraping_info["id"].iloc[0]
-        lyric_url = lyric_scraping_info["url"].iloc[0]
-        lyric_div_id = lyric_scraping_info["div_id"].iloc[0]
+        def scrape_all_buildings_in_db():
+            """Scrape all of the building_names in the apts table and upsert the data into the floor_plans table."""
+            buildings = config_manager.select_cols_from_table(table="apts", cols_list="building_name")
+            buildings_list = [list(b.values())[0] for b in buildings]
+            for b in buildings_list:
+                scraping_info = config_manager.get_apt_scraping_info_given_building(b)
+                apt_id = scraping_info["id"].iloc[0]
+                apt_url = scraping_info["url"].iloc[0]
+                apt_div_id = scraping_info["div_id"].iloc[0]
+
+                latest_b_df = given_url_get_latest_scraped_data(
+                    url=apt_url, div_id=apt_div_id
+                )
+                latest_b_df["apt_id"] = apt_id
+                config_manager.batch_upsert_floor_plans(latest_b_df)
+            print(f"Scraped and upserted {len(buildings_list)}, including: {str(*buildings_list)}")
+
+        scrape_all_buildings_in_db()
 
         # WIP: Test comparing new data with historical.
         # lyric_apt_df = apts_df[apts_df['building_name'] == 'Lyric']
@@ -222,11 +241,7 @@ if __name__ == "__main__":
         # lyric_url = lyric_apt_df['url'].iloc[0]
         # lyric_div_id = lyric_apt_df['div_id'].iloc[0]
 
-        latest_lyric_df = given_url_get_latest_scraped_data(
-            url=lyric_url, div_id=lyric_div_id
-        )
-        latest_lyric_df["apt_id"] = lyric_apt_id
-        config_manager.batch_upsert_floor_plans(latest_lyric_df)
+
 
         # # Lookup old data from floor plans table
         # conn = psycopg2.connect(**db_params)
