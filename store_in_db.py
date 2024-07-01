@@ -218,39 +218,9 @@ if __name__ == "__main__":
     try:
         conn = psycopg2.connect(**db_params)
         config_manager = DBConfigManager(conn)
-        # apts = config_manager.select_all_rows_from_table("apts")
-        # apts_df = pd.DataFrame(apts)
-
-        # for row in all_configs:
-        #     if row['div_id']:
-        #         print(given_url_get_latest_scraped_data(url=row['url'], div_id=row['div_id']))
-        #     else:
-        #         print(interact_scrape_and_get_df(url=row['url']))
-
-        # TODO: store scraped data in db !
-        # fp_cols = config_manager.get_all_cols_in_table("floor_plans")
-        # print(fp_cols)
 
         # Start with building name -> scrape -> upsert [DONE]
-
         scrape_all_buildings_in_db()
-
-        # WIP: Test comparing new data with historical.
-        # lyric_apt_df = apts_df[apts_df['building_name'] == 'Lyric']
-        # lyric_apt_id = lyric_apt_df['id'].iloc[0]
-        # lyric_url = lyric_apt_df['url'].iloc[0]
-        # lyric_div_id = lyric_apt_df['div_id'].iloc[0]
-
-
-
-        # # Lookup old data from floor plans table
-        # conn = psycopg2.connect(**db_params)
-        # config_manager = DBConfigManager(conn)
-        # floor_plans = config_manager.select_all_rows_from_table("floor_plans")
-        # # TODO: filter data in SQL
-        # floor_plans_df = pd.DataFrame(floor_plans)
-        # lyric_fps = floor_plans_df[floor_plans_df["apt_id"] == lyric_apt_id]
-        # print(lyric_fps)
 
     except psycopg2.Error as e:
         print(f"Error connecting to the database: {e}")
