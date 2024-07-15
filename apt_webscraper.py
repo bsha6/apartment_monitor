@@ -102,8 +102,22 @@ def interact_and_scrape_website(url: str) -> BeautifulSoup:
 
     try:
         driver.get(url)
+        time.sleep(3)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        available_apts_header = soup.find("div", class_="available_apartmnt").get_text(strip=True)
 
-        if "450k" in url:
+        if available_apts_header is None:
+            raise ValueError("Could not find the 'available_apartmnt' div")
+    
+        available_apts_str = available_apts_header.strip().split(sep=" ")[0]
+        try:
+            available_apts = int(available_apts_str)
+        except ValueError as e:
+            raise ValueError(f"Failed to convert '{available_apts}' to an integer: {str(e)}") from e
+
+        if available_apts == 0:
+            print(f"No available apartments found at {url}")
+        elif "450k" in url and available_apts > 6:
             time.sleep(1)
             # Scroll to the bottom to force cookie pop up to minimize.
             driver.execute_script("window.scrollBy(0, 1800);")
@@ -118,14 +132,16 @@ def interact_and_scrape_website(url: str) -> BeautifulSoup:
             except Exception as e:
                 print(f"Could not click load more button. Error: {e}")
 
+        elif available_apts <= 6:
+            print(f"Don't need to load more since only {available_apts} available apartments at {url}")
         else:
             raise ValueError(f"URL '{url}' is not recognized.")
-
-        soup = BeautifulSoup(driver.page_source, "html.parser")
+        
         return soup
 
     except Exception as e:
         print(f"Error during scraping url {url}. Error: {e}")
+        print(f"Page source: {driver.page_source[:500]}...") 
 
     finally:
         driver.quit()
@@ -218,9 +234,9 @@ def given_url_get_latest_scraped_data(url: str, div_id: str = None) -> pd.DataFr
 
 
 if __name__ == "__main__":
-    url_450k = "https://www.450k.com/floor-plans/apartments?two-bed"
-    # df_450k = interact_scrape_and_get_df(url_450k)
-    # print(df_450k)
+    url_450k = "https://www.450k.com/floor-plans/apartments?two-bed=1"
+    df_450k = interact_scrape_and_get_df(url_450k)
+    print(df_450k)
 
     lydian_url = "https://lydianlyric.com/lydian-floor-plans-2/?type=2BR"
     lydian_div_id = "floor-plans"
@@ -231,4 +247,4 @@ if __name__ == "__main__":
     # lyric_df = scrape_parse_and_read_html(url=lyric_url, div_id=lydian_div_id)
     # print(lyric_df)
 
-    print(given_url_get_latest_scraped_data(lydian_url, div_id=lydian_div_id))
+    # print(given_url_get_latest_scraped_data(lydian_url, div_id=lydian_div_id))
